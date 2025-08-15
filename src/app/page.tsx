@@ -5,9 +5,9 @@ import BadgeModalWrapper from "../components/BadgeModalWrapper";
 const SOURCE_LABELS: Record<string, string> = {
   JPLD: "Ground Truth: JPLD",
   IRI: "SoTA: International Reference Ionosphere",
-  LSTM: "Model 1: LSTM",
-  SphericalFNO: "Model 2: SphericalFNO",
-  IonCast: "Model 3: IonCast",
+  LSTM: "IonCast LSTM",
+  SFNO: "IonCast SFNO",
+  GNN: "IonCast GNN",
 };
 
 const STATE_LABELS: Record<State, string> = {
@@ -116,65 +116,102 @@ export default async function Page({
           '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif',
       }}
     >
-      {/* Header */}
+      {/* Responsive Header */}
       <header
         style={{
           padding: "16px 20px",
           borderBottom: "1px solid #222836",
           display: "flex",
-          gap: 16,
-          alignItems: "center",
+          flexDirection: "column",
+          gap: 12,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
-          TEC GIF Viewer
-        </h1>
-
-        {/* Source tabs */}
         <div
           style={{
             display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
             gap: 8,
-            flexWrap: "wrap",
-            marginLeft: "auto",
-            alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 12, opacity: 0.8 }}>Source</span>
-          {sourcesPresent.map((src) => (
-            <Link
-              key={src}
-              href={urlFor(src, safeSelectedState)}
-              title={SOURCE_LABELS[src] ?? src}
-              style={pill(src === selectedSource)}
-            >
-              {SOURCE_LABELS[src] ?? src}
-            </Link>
-          ))}
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+            HL Ionosphere Demo
+          </h1>
         </div>
-
-        {/* State segmented control */}
         <div
           style={{
             display: "flex",
-            gap: 6,
-            flexWrap: "wrap",
-            marginLeft: 12,
-            alignItems: "center",
+            flexDirection: "column",
+            gap: 10,
+            width: "100%",
           }}
         >
-          <span style={{ fontSize: 12, opacity: 0.8 }}>State</span>
-          {statesForSource.map((st) => (
-            <Link
-              key={st}
-              href={urlFor(selectedSource, st)}
-              title={st}
-              style={segment(st === safeSelectedState)}
-            >
-              {STATE_LABELS[st]}
-            </Link>
-          ))}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontSize: 12, opacity: 0.8 }}>Source</span>
+            {sourcesPresent.map((src) => (
+              <Link
+                key={src}
+                href={urlFor(src, safeSelectedState)}
+                title={SOURCE_LABELS[src] ?? src}
+                style={pill(src === selectedSource)}
+              >
+                {SOURCE_LABELS[src] ?? src}
+              </Link>
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontSize: 12, opacity: 0.8 }}>State</span>
+            {statesForSource.map((st) => (
+              <Link
+                key={st}
+                href={urlFor(selectedSource, st)}
+                title={st}
+                style={segment(st === safeSelectedState)}
+              >
+                {STATE_LABELS[st]}
+              </Link>
+            ))}
+          </div>
         </div>
+        <style>{`
+          @media (max-width: 600px) {
+            header {
+              padding: 12px 8px !important;
+              gap: 8px !important;
+            }
+            header h1 {
+              font-size: 16px !important;
+            }
+            header > div {
+              flex-direction: column !important;
+              gap: 8px !important;
+            }
+            header span {
+              font-size: 11px !important;
+            }
+            header a {
+              font-size: 12px !important;
+              padding: 8px 10px !important;
+            }
+          }
+        `}</style>
       </header>
 
       {/* Viewer */}
@@ -193,7 +230,12 @@ export default async function Page({
               border: "none",
               borderRadius: 12,
               padding: 16,
-              width: "min(100%, 900px)",
+              width: "min(80%, 900px)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+              boxSizing: "border-box",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -203,10 +245,36 @@ export default async function Page({
               style={{
                 width: "100%",
                 height: "auto",
+                maxHeight: "calc(100vh - 220px)", // leaves room for header and badge
                 display: "block",
                 borderRadius: 8,
+                objectFit: "contain",
+                boxSizing: "border-box",
               }}
             />
+            <style>{`
+              @media (max-width: 900px) {
+                figure {
+                  width: 100% !important;
+                  padding: 8px !important;
+                  justify-content: flex-start !important;
+                  align-items: flex-start !important;
+                }
+                figure img {
+                  max-height: calc(100vh - 180px) !important;
+                }
+              }
+              @media (max-width: 600px) {
+                figure {
+                  padding: 4px !important;
+                  justify-content: flex-start !important;
+                  align-items: flex-start !important;
+                }
+                figure img {
+                  max-height: calc(100vh - 140px) !important;
+                }
+              }
+            `}</style>
           </figure>
         ) : (
           <p style={{ opacity: 0.8 }}>
