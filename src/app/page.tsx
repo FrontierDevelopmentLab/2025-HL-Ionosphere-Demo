@@ -1,103 +1,223 @@
-import Image from "next/image";
+import Link from "next/link";
+import { getGifsFromPublic, State } from "./getGifs";
+import BadgeModalWrapper from "../components/BadgeModalWrapper";
 
-export default function Home() {
+const SOURCE_LABELS: Record<string, string> = {
+  JPLD: "Ground Truth: JPLD",
+  IRI: "SoTA: International Reference Ionosphere",
+  LSTM: "Model 1: LSTM",
+  SphericalFNO: "Model 2: SphericalFNO",
+  IonCast: "Model 3: IonCast",
+};
+
+const STATE_LABELS: Record<State, string> = {
+  Quiet: "Quiet",
+  Moderate: "Moderate",
+  Storm: "Storm",
+};
+
+const pill = (active: boolean): React.CSSProperties => ({
+  textDecoration: "none",
+  padding: "10px 14px",
+  borderRadius: 999,
+  border: active ? "1px solid #2563eb" : "1px solid #293042",
+  background: active ? "rgba(37, 99, 235, 0.15)" : "#141a28",
+  color: active ? "#eaf1ff" : "#d7e2f1",
+  fontWeight: 600,
+  fontSize: 14,
+  display: "inline-block",
+  lineHeight: 1,
+  whiteSpace: "nowrap",
+});
+
+const segment = (active: boolean): React.CSSProperties => ({
+  textDecoration: "none",
+  padding: "8px 12px",
+  borderRadius: 10,
+  border: active ? "1px solid #2563eb" : "1px solid #293042",
+  background: active ? "rgba(37, 99, 235, 0.15)" : "#141a28",
+  color: active ? "#eaf1ff" : "#d7e2f1",
+  fontWeight: 600,
+  fontSize: 13,
+  display: "inline-block",
+  lineHeight: 1,
+  whiteSpace: "nowrap",
+});
+
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const gifs = getGifsFromPublic();
+
+  // Present options from files
+  const sourcesPresent = Array.from(new Set(gifs.map((g) => g.source))).sort(
+    (a, b) => (SOURCE_LABELS[a] ?? a).localeCompare(SOURCE_LABELS[b] ?? b)
+  );
+  const statesPresent: State[] = (["Quiet", "Moderate", "Storm"] as State[]).filter(
+    (st) => gifs.some((g) => g.state === st)
+  );
+
+  const defaultSource = sourcesPresent[0];
+  const defaultState = statesPresent[0];
+
+  // helpers to avoid nested ternaries
+  const firstString = (v?: string | string[]) =>
+    Array.isArray(v) ? v[0] : v;
+
+  const pickSource = (
+    sp: { [k: string]: string | string[] | undefined } | undefined,
+    list: string[],
+    fallback: string
+  ) => {
+    const raw = firstString(sp?.source);
+    return raw && list.includes(raw) ? raw : fallback;
+  };
+
+  const pickState = (
+    sp: { [k: string]: string | string[] | undefined } | undefined,
+    list: State[],
+    fallback: State
+  ) => {
+    const raw = firstString(sp?.state) as State | undefined;
+    return raw && list.includes(raw) ? raw : fallback;
+  };
+
+  const selectedSource = pickSource(resolvedSearchParams, sourcesPresent, defaultSource);
+  const selectedState = pickState(resolvedSearchParams, statesPresent, defaultState);
+
+  // Constrain states to selected source
+  const statesForSource = (["Quiet", "Moderate", "Storm"] as State[]).filter((st) =>
+    gifs.some((g) => g.source === selectedSource && g.state === st)
+  );
+  const safeSelectedState = statesForSource.includes(selectedState)
+    ? selectedState
+    : statesForSource[0];
+
+  const match = gifs.find(
+    (g) => g.source === selectedSource && g.state === safeSelectedState
+  );
+
+  const urlFor = (src: string, st: State) =>
+    `/?source=${encodeURIComponent(src)}&state=${encodeURIComponent(st)}`;
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main
+      style={{
+        minHeight: "100dvh",
+        display: "grid",
+        gridTemplateRows: "auto 1fr",
+        background: "#000",
+        color: "#e8eef7",
+        fontFamily:
+          '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif',
+      }}
+    >
+      {/* Header */}
+      <header
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid #222836",
+          display: "flex",
+          gap: 16,
+          alignItems: "center",
+        }}
+      >
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+          TEC GIF Viewer
+        </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Source tabs */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            marginLeft: "auto",
+            alignItems: "center",
+          }}
+        >
+          <span style={{ fontSize: 12, opacity: 0.8 }}>Source</span>
+          {sourcesPresent.map((src) => (
+            <Link
+              key={src}
+              href={urlFor(src, safeSelectedState)}
+              title={SOURCE_LABELS[src] ?? src}
+              style={pill(src === selectedSource)}
+            >
+              {SOURCE_LABELS[src] ?? src}
+            </Link>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        {/* State segmented control */}
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            flexWrap: "wrap",
+            marginLeft: 12,
+            alignItems: "center",
+          }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <span style={{ fontSize: 12, opacity: 0.8 }}>State</span>
+          {statesForSource.map((st) => (
+            <Link
+              key={st}
+              href={urlFor(selectedSource, st)}
+              title={st}
+              style={segment(st === safeSelectedState)}
+            >
+              {STATE_LABELS[st]}
+            </Link>
+          ))}
+        </div>
+      </header>
+
+      {/* Viewer */}
+      <section
+        style={{
+          display: "grid",
+          placeItems: "center",
+          padding: 24,
+        }}
+      >
+        {match ? (
+          <figure
+            style={{
+              margin: 0,
+              background: "#000",
+              border: "none",
+              borderRadius: 12,
+              padding: 16,
+              width: "min(100%, 900px)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/gifs/${match.file}`}
+              alt={match.file}
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+                borderRadius: 8,
+              }}
+            />
+          </figure>
+        ) : (
+          <p style={{ opacity: 0.8 }}>
+            No matching GIF found. Add files to <code>/public</code> named like{" "}
+            <code>TEC_&lt;SOURCE&gt;_&lt;STATE&gt;.gif</code>.
+          </p>
+        )}
+      </section>
+
+      {/* Badge modal client component */}
+      <BadgeModalWrapper />
+    </main>
   );
 }
