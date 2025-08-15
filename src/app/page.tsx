@@ -4,7 +4,7 @@ import BadgeModalWrapper from "../components/BadgeModalWrapper";
 
 const SOURCE_LABELS: Record<string, string> = {
   JPLD: "Ground Truth: JPLD",
-  IRI: "SoTA: International Reference Ionosphere",
+  IRI: "International Reference Ionosphere",
   LSTM: "IonCast LSTM",
   SFNO: "IonCast SFNO",
   GNN: "IonCast GNN",
@@ -136,7 +136,7 @@ export default async function Page({
           }}
         >
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
-            HL Ionosphere Demo
+            Ionosphere Forecast Model Explorer
           </h1>
         </div>
         <div
@@ -156,7 +156,7 @@ export default async function Page({
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: 12, opacity: 0.8 }}>Source</span>
+            <span style={{ fontSize: 12, opacity: 0.8 }}>Model</span>
             {sourcesPresent.map((src) => (
               <Link
                 key={src}
@@ -177,7 +177,7 @@ export default async function Page({
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: 12, opacity: 0.8 }}>State</span>
+            <span style={{ fontSize: 12, opacity: 0.8 }}>Intensity Level</span>
             {statesForSource.map((st) => (
               <Link
                 key={st}
